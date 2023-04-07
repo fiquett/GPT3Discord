@@ -78,6 +78,7 @@ class Settings_autocompleter:
                 )
             ],
             "type": ["warn", "delete"],
+            "use_org": ["True", "False"],
         }
         options = values.get(ctx.options["parameter"], [])
         if options:
@@ -90,15 +91,29 @@ class Settings_autocompleter:
         ctx: discord.AutocompleteContext,
     ):
         """Gets all models"""
-        return [
+        models = [
             value for value in Models.TEXT_MODELS if value.startswith(ctx.value.lower())
         ]
+        return models
+
+    async def get_index_and_search_models(
+        ctx: discord.AutocompleteContext,
+    ):
+        return ["gpt-3.5-turbo", "gpt-4"]
+
+    async def get_converse_models(
+        ctx: discord.AutocompleteContext,
+    ):
+        """Gets all models"""
+        models = [
+            value for value in Models.TEXT_MODELS if value.startswith(ctx.value.lower())
+        ]
+        return models
 
     async def get_value_moderations(
         ctx: discord.AutocompleteContext,
     ):  # Behaves a bit weird if you go back and edit the parameter without typing in a new command
         """gets valid values for the type option"""
-        print(f"The value is {ctx.value}")
         return [
             value
             for value in ModerationOptions.OPTIONS
@@ -183,3 +198,20 @@ class File_autocompleter:
             ]  # returns the 25 first files from your current input
         except Exception:
             return ["No server indexes found, add an index"]
+
+    async def get_user_search_indexes(ctx: discord.AutocompleteContext):
+        """get all files in the indexes folder"""
+        try:
+            return [
+                file
+                for file in os.listdir(
+                    EnvService.find_shared_file(
+                        f"indexes/{str(ctx.interaction.user.id)}_search/"
+                    )
+                )
+                if file.startswith(ctx.value.lower())
+            ][
+                :25
+            ]  # returns the 25 first files from your current input
+        except Exception:
+            return ["No user indexes found, add an index"]

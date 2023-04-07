@@ -1,4 +1,5 @@
 import asyncio
+import random
 import tempfile
 import traceback
 from io import BytesIO
@@ -121,7 +122,6 @@ class ImageService:
                 ctx=ctx,
                 response=result_message,
                 instruction=None,
-                codex=False,
                 paginator=None,
             )
 
@@ -183,7 +183,6 @@ class ImageService:
                         ctx=ctx,
                         response=result_message,
                         instruction=None,
-                        codex=False,
                         paginator=None,
                     )
 
@@ -262,7 +261,11 @@ class SaveView(discord.ui.View):
 
 class VaryButton(discord.ui.Button):
     def __init__(self, number, image_url, cog, converser_cog, custom_api_key):
-        super().__init__(style=discord.ButtonStyle.blurple, label="Vary " + str(number))
+        super().__init__(
+            style=discord.ButtonStyle.blurple,
+            label="Vary " + str(number),
+            custom_id="vary_button" + str(random.randint(10000000, 99999999)),
+        )
         self.number = number
         self.image_url = image_url
         self.cog = cog
@@ -318,7 +321,11 @@ class VaryButton(discord.ui.Button):
 
 class SaveButton(discord.ui.Button["SaveView"]):
     def __init__(self, number: int, image_url: str):
-        super().__init__(style=discord.ButtonStyle.gray, label="Save " + str(number))
+        super().__init__(
+            style=discord.ButtonStyle.gray,
+            label="Save " + str(number),
+            custom_id="save_button" + str(random.randint(1000000, 9999999)),
+        )
         self.number = number
         self.image_url = image_url
 
@@ -349,7 +356,11 @@ class SaveButton(discord.ui.Button["SaveView"]):
 
 class RedoButton(discord.ui.Button["SaveView"]):
     def __init__(self, cog, converser_cog, custom_api_key):
-        super().__init__(style=discord.ButtonStyle.danger, label="Retry")
+        super().__init__(
+            style=discord.ButtonStyle.danger,
+            label="Retry",
+            custom_id="redo_button_draw_main",
+        )
         self.cog = cog
         self.converser_cog = converser_cog
         self.custom_api_key = custom_api_key

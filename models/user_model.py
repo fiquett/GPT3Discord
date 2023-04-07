@@ -5,13 +5,12 @@ history, message count, and the id of the user in order to track them.
 
 
 class RedoUser:
-    def __init__(self, prompt, instruction, message, ctx, response, codex, paginator):
+    def __init__(self, prompt, instruction, message, ctx, response, paginator):
         self.prompt = prompt
         self.instruction = instruction
         self.message = message
         self.ctx = ctx
         self.response = response
-        self.codex = codex
         self.paginator = paginator
         self.interactions = []
 
@@ -60,6 +59,7 @@ class Thread:
         self.thread_id = thread_id
         self.history = []
         self.count = 0
+        self.has_opener = False
         self.model = None
         self.temperature = None
         self.top_p = None

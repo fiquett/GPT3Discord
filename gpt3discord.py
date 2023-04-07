@@ -17,10 +17,12 @@ from cogs.image_service_cog import DrawDallEService
 from cogs.prompt_optimizer_cog import ImgPromptOptimizer
 from cogs.moderations_service_cog import ModerationsService
 from cogs.commands import Commands
+from cogs.transcription_service_cog import TranscribeService
 from cogs.translation_service_cog import TranslationService
 from cogs.index_service_cog import IndexService
 from models.deepl_model import TranslationModel
 from services.health_service import HealthService
+from services.pickle_service import Pickler
 
 from services.pinecone_service import PineconeService
 from services.deletion_service import Deletion
@@ -31,7 +33,7 @@ from services.environment_service import EnvService
 from models.openai_model import Model
 
 
-__version__ = "10.2.3"
+__version__ = "11.2.2"
 
 
 PID_FILE = Path("bot.pid")
@@ -53,7 +55,7 @@ except Exception:
 
 pinecone_service = None
 if PINECONE_TOKEN:
-    pinecone.init(api_key=PINECONE_TOKEN, environment="us-west1-gcp")
+    pinecone.init(api_key=PINECONE_TOKEN, environment=EnvService.get_pinecone_region())
     PINECONE_INDEX = "conversation-embeddings"
     if PINECONE_INDEX not in pinecone.list_indexes():
         print("Creating pinecone index. Please wait...")
@@ -74,6 +76,17 @@ message_queue = asyncio.Queue()
 deletion_queue = asyncio.Queue()
 asyncio.ensure_future(Message.process_message_queue(message_queue, 1.5, 5))
 asyncio.ensure_future(Deletion.process_deletion_queue(deletion_queue, 1, 1))
+
+# Pickling service for conversation persistence
+try:
+    Path(EnvService.save_path() / "pickles").mkdir(exist_ok=True)
+except Exception:
+    traceback.print_exc()
+    print(
+        "Could not start pickle service. Conversation history will not be persistent across restarts."
+    )
+pickle_queue = asyncio.Queue()
+asyncio.ensure_future(Pickler.process_pickle_queue(pickle_queue, 5, 1))
 
 
 #
@@ -130,6 +143,7 @@ async def main():
             debug_channel,
             data_path,
             pinecone_service=pinecone_service,
+            pickle_queue=pickle_queue,
         )
     )
 
@@ -175,6 +189,14 @@ async def main():
         print("The Search service is enabled.")
 
     bot.add_cog(
+        TranscribeService(
+            bot,
+            model,
+            usage_service,
+        )
+    )
+
+    bot.add_cog(
         Commands(
             bot,
             usage_service,
@@ -188,6 +210,7 @@ async def main():
             bot.get_cog("IndexService"),
             bot.get_cog("TranslationService"),
             bot.get_cog("SearchService"),
+            bot.get_cog("TranscribeService"),
         )
     )
 

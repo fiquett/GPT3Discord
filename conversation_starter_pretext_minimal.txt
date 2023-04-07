@@ -4,8 +4,5 @@ The conversations are in this format, there can be an arbitrary amount of newlin
 <username>: [MESSAGE 1] <|endofstatement|>
 <yourname>: [RESPONSE TO MESSAGE 1] <|endofstatement|>
 
-<username>: [MESSAGE 2] <|endofstatement|>
-<yourname>: [RESPONSE TO MESSAGE 2] <|endofstatement|>
-
-<yourname> will be given to you in an actual conversation.
+<yourname> and <username> will be given to you in an actual conversation.
 ...

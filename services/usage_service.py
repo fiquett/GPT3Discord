@@ -14,12 +14,44 @@ class UsageService:
                 f.close()
         self.tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 
-    async def update_usage(self, tokens_used, embeddings=False):
+    async def get_price(
+        self,
+        tokens_used,
+        prompt_tokens=None,
+        completion_tokens=None,
+        embeddings=False,
+        chatgpt=False,
+        gpt4=False,
+    ):
         tokens_used = int(tokens_used)
-        if not embeddings:
-            price = (
-                tokens_used / 1000
-            ) * 0.02  # Just use the highest rate instead of model-based... I am overestimating on purpose.
+        if gpt4:
+            price = (tokens_used / 1000) * 0.05  # This is a very rough estimate
+            return price
+        elif chatgpt:
+            price = (tokens_used / 1000) * 0.002
+            return price
+        elif not embeddings:
+            price = (tokens_used / 1000) * 0.02
+        else:
+            price = (tokens_used / 1000) * 0.0004
+        return price
+
+    async def update_usage(
+        self,
+        tokens_used,
+        prompt_tokens=None,
+        completion_tokens=None,
+        embeddings=False,
+        chatgpt=False,
+        gpt4=False,
+    ):
+        tokens_used = int(tokens_used)
+        if gpt4:
+            price = (tokens_used / 1000) * 0.05  # This is a very rough estimate..
+        elif chatgpt:
+            price = (tokens_used / 1000) * 0.002
+        elif not embeddings:
+            price = (tokens_used / 1000) * 0.02
         else:
             price = (tokens_used / 1000) * 0.0004
         usage = await self.get_usage()

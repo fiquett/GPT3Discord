@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 from pathlib import Path
 from typing import Union
 
@@ -42,6 +43,13 @@ class EnvService:
                 return app_relative
 
         return Path.cwd()
+
+    @staticmethod
+    def save_path():
+        share_dir = os.getenv("SHARE_DIR")
+        if share_dir is not None:
+            return Path(share_dir)
+        return app_root_path()
 
     @staticmethod
     def find_shared_file(file_name):
@@ -153,7 +161,7 @@ class EnvService:
             print(
                 "TRANSLATOR_ROLES is not defined properly in the environment file!"
                 "Please copy your server's role and put it into TRANSLATOR in the .env file."
-                'For example a line should look like: `TRANSLATOR="Translate"`'
+                'For example a line should look like: `TRANSLATOR_ROLES="Translate"`'
             )
             print("Defaulting to allowing all users to use Translator commands...")
             return [None]
@@ -164,6 +172,32 @@ class EnvService:
             else [translator_roles.lower()]
         )
         return translator_roles
+
+    @staticmethod
+    def get_search_roles():
+        # DALLE_ROLES is a comma separated list of string roles
+        # It can also just be one role
+        # Read these allowed roles and return as a list of strings
+        try:
+            search_roles = os.getenv("SEARCH_ROLES")
+        except Exception:
+            search_roles = None
+
+        if search_roles is None:
+            print(
+                "SEARCH_ROLES is not defined properly in the environment file!"
+                "Please copy your server's role and put it into SEARCH in the .env file."
+                'For example a line should look like: `SEARCH_ROLES="Translate"`'
+            )
+            print("Defaulting to allowing all users to use Search commands...")
+            return [None]
+
+        search_roles = (
+            search_roles.lower().split(",")
+            if "," in search_roles
+            else [search_roles.lower()]
+        )
+        return search_roles
 
     @staticmethod
     def get_gpt_roles():
@@ -199,6 +233,7 @@ class EnvService:
         try:
             index_roles = os.getenv("INDEX_ROLES")
         except Exception:
+            traceback.print_exc()
             index_roles = None
 
         if index_roles is None:
@@ -216,6 +251,34 @@ class EnvService:
             else [index_roles.lower()]
         )
         return index_roles
+
+    @staticmethod
+    def get_channel_chat_roles():
+        # GPT_ROLES is a comma separated list of string roles
+        # It can also just be one role
+        # Read these allowed roles and return as a list of strings
+        try:
+            cc_roles = os.getenv("CHANNEL_CHAT_ROLES")
+        except Exception:
+            cc_roles = None
+
+        if cc_roles is None:
+            print(
+                "CHANNEL_CHAT_ROLES is not defined properly in the environment file!"
+                "Please copy your server's role and put it into CHANNEL_CHAT_ROLES in the .env file."
+                'For example a line should look like: `CHANNEL_CHAT_ROLES="Gpt"`'
+            )
+            print(
+                "Defaulting to allowing all users to make conversations in full channels..."
+            )
+            return [None]
+
+        cc_roles = (
+            cc_roles.lower().strip().split(",")
+            if "," in cc_roles
+            else [cc_roles.lower()]
+        )
+        return cc_roles
 
     @staticmethod
     def get_welcome_message():
@@ -249,6 +312,26 @@ class EnvService:
             return False
 
     @staticmethod
+    def get_premoderate():
+        try:
+            pre_moderate = os.getenv("PRE_MODERATE")
+            if pre_moderate.lower().strip() == "true":
+                return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_force_english():
+        try:
+            force_english = os.getenv("FORCE_ENGLISH")
+            if force_english.lower().strip() == "true":
+                return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
     def get_custom_bot_name():
         try:
             custom_bot_name = os.getenv("CUSTOM_BOT_NAME") + ": "
@@ -260,6 +343,16 @@ class EnvService:
     def get_health_service_enabled():
         try:
             user_input_api_keys = os.getenv("HEALTH_SERVICE_ENABLED")
+            if user_input_api_keys.lower().strip() == "true":
+                return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_bot_is_taggable():
+        try:
+            user_input_api_keys = os.getenv("BOT_TAGGABLE")
             if user_input_api_keys.lower().strip() == "true":
                 return True
             return False
@@ -291,7 +384,7 @@ class EnvService:
                 print(
                     "No user key database path was provided. Defaulting to user_key_db.sqlite"
                 )
-                user_key_db_path = "user_key_db.sqlite"
+                user_key_db_path = EnvService.find_shared_file("user_key_db.sqlite")
             else:
                 # append "user_key_db.sqlite" to USER_KEY_DB_PATH if it doesn't already end with .sqlite
                 if not user_key_db_path.match("*.sqlite"):
@@ -337,6 +430,24 @@ class EnvService:
             return None
 
     @staticmethod
+    def get_openai_token():
+        try:
+            openai_token = os.getenv("OPENAI_TOKEN")
+            return openai_token
+        except Exception:
+            raise ValueError(
+                "OPENAI_TOKEN is not defined properly in the environment file! The bot cannot start without this token."
+            )
+
+    @staticmethod
+    def get_openai_organization():
+        try:
+            openai_org = os.getenv("OPENAI_ORGANIZATION")
+            return openai_org
+        except Exception:
+            return None
+
+    @staticmethod
     def get_google_search_api_key():
         try:
             google_search_api_key = os.getenv("GOOGLE_SEARCH_API_KEY")
@@ -351,3 +462,27 @@ class EnvService:
             return google_search_engine_id
         except Exception:
             return None
+
+    @staticmethod
+    def get_pinecone_region():
+        try:
+            pinecone_region = os.getenv("PINECONE_REGION")
+            return pinecone_region
+        except Exception:
+            return "us-west1-gcp"
+
+    @staticmethod
+    def get_max_search_price():
+        try:
+            search_price = float(os.getenv("MAX_SEARCH_PRICE"))
+            return search_price
+        except Exception:
+            return 1.00
+
+    @staticmethod
+    def get_max_deep_compose_price():
+        try:
+            deep_compose_price = float(os.getenv("MAX_DEEP_COMPOSE_PRICE"))
+            return deep_compose_price
+        except Exception:
+            return 3.00

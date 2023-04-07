@@ -4,16 +4,18 @@ import traceback
 import discord
 from sqlitedict import SqliteDict
 
-from models.openai_model import Override
+from models.openai_model import Override, Models
 from services.environment_service import EnvService
 from models.user_model import RedoUser
 from services.image_service import ImageService
+from services.moderations_service import Moderation
 
 from services.text_service import TextService
 
 ALLOWED_GUILDS = EnvService.get_allowed_guilds()
 USER_INPUT_API_KEYS = EnvService.get_user_input_api_keys()
 USER_KEY_DB = EnvService.get_api_db()
+PRE_MODERATE = EnvService.get_premoderate()
 
 
 class ImgPromptOptimizer(discord.Cog, name="ImgPromptOptimizer"):
@@ -76,6 +78,11 @@ class ImgPromptOptimizer(discord.Cog, name="ImgPromptOptimizer"):
         if not final_prompt.endswith("."):
             final_prompt += "."
 
+        # Check the opener for bad content.
+        if PRE_MODERATE:
+            if await Moderation.simple_moderate_and_respond(prompt, ctx):
+                return
+
         # Get the token amount for the prompt
         # tokens = self.usage_service.count_tokens(final_prompt)
 
@@ -87,15 +94,25 @@ class ImgPromptOptimizer(discord.Cog, name="ImgPromptOptimizer"):
                 temp_override=0.9,
                 presence_penalty_override=0.5,
                 best_of_override=1,
-                max_tokens_override=80,
+                max_tokens_override=60,
                 custom_api_key=user_api_key,
+                is_chatgpt_request="turbo" in str(self.model.model)
+                or "gpt-4" in str(self.model.model),
             )
 
             # THIS USES MORE TOKENS THAN A NORMAL REQUEST! This will use roughly 4000 tokens, and will repeat the query
             # twice because of the best_of_override=2 parameter. This is to ensure that the model does a lot of analysis, but is
             # also relatively cost-effective
 
-            response_text = response["choices"][0]["text"]
+            response_text = (
+                str(response["choices"][0]["text"])
+                if not (
+                    self.model.model in Models.CHATGPT_MODELS
+                    or self.model.model in Models.GPT4_MODELS
+                )
+                else response["choices"][0]["message"]["content"]
+            )
+
             # escape any mentions
             response_text = discord.utils.escape_mentions(response_text)
 
@@ -124,7 +141,6 @@ class ImgPromptOptimizer(discord.Cog, name="ImgPromptOptimizer"):
                 ctx=ctx,
                 response=response_message,
                 instruction=None,
-                codex=False,
                 paginator=None,
             )
             self.converser_cog.redo_users[user.id].add_interaction(response_message.id)
@@ -182,7 +198,11 @@ class DrawButton(discord.ui.Button["OptimizeView"]):
     def __init__(
         self, converser_cog, image_service_cog, deletion_queue, custom_api_key
     ):
-        super().__init__(style=discord.ButtonStyle.green, label="Draw")
+        super().__init__(
+            style=discord.ButtonStyle.green,
+            label="Draw",
+            custom_id="draw_button_optimizer",
+        )
         self.converser_cog = converser_cog
         self.image_service_cog = image_service_cog
         self.deletion_queue = deletion_queue
@@ -237,7 +257,11 @@ class RedoButton(discord.ui.Button["OptimizeView"]):
     def __init__(
         self, converser_cog, image_service_cog, deletion_queue, custom_api_key=None
     ):
-        super().__init__(style=discord.ButtonStyle.danger, label="Retry")
+        super().__init__(
+            style=discord.ButtonStyle.danger,
+            label="Retry",
+            custom_id="redo_button_optimizer",
+        )
         self.converser_cog = converser_cog
         self.image_service_cog = image_service_cog
         self.deletion_queue = deletion_queue

@@ -29,6 +29,7 @@ class Commands(discord.Cog, name="Commands"):
         index_cog,
         translations_cog=None,
         search_cog=None,
+        transcribe_cog=None,
     ):
         super().__init__()
         self.bot = bot
@@ -43,6 +44,7 @@ class Commands(discord.Cog, name="Commands"):
         self.index_cog = index_cog
         self.translations_cog = translations_cog
         self.search_cog = search_cog
+        self.transcribe_cog = transcribe_cog
 
     # Create slash command groups
     dalle = discord.SlashCommandGroup(
@@ -74,6 +76,12 @@ class Commands(discord.Cog, name="Commands"):
         description="Custom index commands for the bot",
         guild_ids=ALLOWED_GUILDS,
         checks=[Check.check_index_roles()],
+    )
+    transcribe = discord.SlashCommandGroup(
+        name="transcribe",
+        description="Transcription services using OpenAI Whisper",
+        guild_ids=ALLOWED_GUILDS,
+        checks=[Check.check_index_roles()],  # TODO new role checker for transcribe
     )
 
     #
@@ -310,6 +318,12 @@ class Commands(discord.Cog, name="Commands"):
         name="prompt", description="The prompt to send to GPT3", required=True
     )
     @discord.option(
+        name="model",
+        description="The model to use for the request",
+        required=False,
+        autocomplete=Settings_autocompleter.get_models,
+    )
+    @discord.option(
         name="private", description="Will only be visible to you", required=False
     )
     @discord.option(
@@ -345,6 +359,7 @@ class Commands(discord.Cog, name="Commands"):
         self,
         ctx: discord.ApplicationContext,
         prompt: str,
+        model: str,
         private: bool,
         temperature: float,
         top_p: float,
@@ -359,6 +374,7 @@ class Commands(discord.Cog, name="Commands"):
             top_p,
             frequency_penalty,
             presence_penalty,
+            model=model,
         )
 
     @add_to_group("gpt")
@@ -397,9 +413,6 @@ class Commands(discord.Cog, name="Commands"):
         min_value=0,
         max_value=1,
     )
-    @discord.option(
-        name="codex", description="Enable codex version", required=False, default=False
-    )
     @discord.guild_only()
     async def edit(
         self,
@@ -409,10 +422,9 @@ class Commands(discord.Cog, name="Commands"):
         private: bool,
         temperature: float,
         top_p: float,
-        codex: bool,
     ):
         await self.converser_cog.edit_command(
-            ctx, instruction, text, private, temperature, top_p, codex
+            ctx, instruction, text, private, temperature, top_p
         )
 
     @add_to_group("gpt")
@@ -449,7 +461,7 @@ class Commands(discord.Cog, name="Commands"):
         description="Which model to use with the bot",
         required=False,
         default=False,
-        autocomplete=Settings_autocompleter.get_models,
+        autocomplete=Settings_autocompleter.get_converse_models,
     )
     @discord.option(
         name="temperature",
@@ -483,6 +495,12 @@ class Commands(discord.Cog, name="Commands"):
         min_value=-2,
         max_value=2,
     )
+    @discord.option(
+        name="use_threads",
+        description="Set this to false to start a channel conversation",
+        required=False,
+        default=True,
+    )
     @discord.guild_only()
     async def converse(
         self,
@@ -496,6 +514,7 @@ class Commands(discord.Cog, name="Commands"):
         top_p: float,
         frequency_penalty: float,
         presence_penalty: float,
+        use_threads: bool,
     ):
         await self.converser_cog.converse_command(
             ctx,
@@ -508,6 +527,7 @@ class Commands(discord.Cog, name="Commands"):
             top_p,
             frequency_penalty,
             presence_penalty,
+            use_threads=use_threads,
         )
 
     @add_to_group("gpt")
@@ -523,6 +543,89 @@ class Commands(discord.Cog, name="Commands"):
     #
     # Index commands
     #
+    @add_to_group("index")
+    @discord.slash_command(
+        name="rename-user",
+        description="Select one of your saved indexes to rename",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="user_index",
+        description="Which user index to rename",
+        required=True,
+        autocomplete=File_autocompleter.get_user_indexes,
+    )
+    @discord.option(
+        name="new_name",
+        description="The new name",
+        required=True,
+        type=discord.SlashCommandOptionType.string,
+    )
+    async def rename_user_index(
+        self,
+        ctx: discord.ApplicationContext,
+        user_index: str,
+        new_name: str,
+    ):
+        await ctx.defer()
+        await self.index_cog.rename_user_index_command(ctx, user_index, new_name)
+
+    @add_to_group("index")
+    @discord.slash_command(
+        name="rename-server",
+        description="Select one of your saved server indexes to rename",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="server_index",
+        description="Which server index to rename",
+        required=True,
+        autocomplete=File_autocompleter.get_server_indexes,
+    )
+    @discord.option(
+        name="new_name",
+        description="The new name",
+        required=True,
+        type=discord.SlashCommandOptionType.string,
+    )
+    async def rename_server_index(
+        self,
+        ctx: discord.ApplicationContext,
+        server_index: str,
+        new_name: str,
+    ):
+        await ctx.defer()
+        await self.index_cog.rename_server_index_command(ctx, server_index, new_name)
+
+    @add_to_group("index")
+    @discord.slash_command(
+        name="rename-search",
+        description="Select one of your saved search indexes to rename",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="search_index",
+        description="Which search index to rename",
+        required=True,
+        autocomplete=File_autocompleter.get_user_search_indexes,
+    )
+    @discord.option(
+        name="new_name",
+        description="The new name",
+        required=True,
+        type=discord.SlashCommandOptionType.string,
+    )
+    async def rename_search_index(
+        self,
+        ctx: discord.ApplicationContext,
+        search_index: str,
+        new_name: str,
+    ):
+        await ctx.defer()
+        await self.index_cog.rename_search_index_command(ctx, search_index, new_name)
 
     @add_to_group("index")
     @discord.slash_command(
@@ -543,10 +646,23 @@ class Commands(discord.Cog, name="Commands"):
         required=False,
         autocomplete=File_autocompleter.get_server_indexes,
     )
+    @discord.option(
+        name="search_index",
+        description="Which search index file to load the index from",
+        required=False,
+        autocomplete=File_autocompleter.get_user_search_indexes,
+    )
     async def load_index(
-        self, ctx: discord.ApplicationContext, user_index: str, server_index: str
+        self,
+        ctx: discord.ApplicationContext,
+        user_index: str,
+        server_index: str,
+        search_index: str,
     ):
-        await self.index_cog.load_index_command(ctx, user_index, server_index)
+        await ctx.defer()
+        await self.index_cog.load_index_command(
+            ctx, user_index, server_index, search_index
+        )
 
     @add_to_group("index")
     @discord.slash_command(
@@ -569,6 +685,32 @@ class Commands(discord.Cog, name="Commands"):
         self, ctx: discord.ApplicationContext, file: discord.Attachment, link: str
     ):
         await self.index_cog.set_index_command(ctx, file, link)
+
+    @add_to_group("index")
+    @discord.slash_command(
+        name="recurse-link",
+        description="Recursively index a link",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="link",
+        description="A link to create the index from",
+        required=True,
+        input_type=discord.SlashCommandOptionType.string,
+    )
+    @discord.option(
+        name="depth",
+        description="How deep to recurse",
+        required=False,
+        input_type=discord.SlashCommandOptionType.integer,
+        min_value=1,
+        max_value=5,
+    )
+    async def set_recurse_link(
+        self, ctx: discord.ApplicationContext, link: str, depth: int
+    ):
+        await self.index_cog.set_index_link_recurse_command(ctx, link, depth)
 
     @add_to_group("index")
     @discord.slash_command(
@@ -609,10 +751,21 @@ class Commands(discord.Cog, name="Commands"):
         required=False,
         input_type=discord.SlashCommandOptionType.channel,
     )
+    @discord.option(
+        name="message_limit",
+        description="The number of messages to index",
+        required=False,
+        input_type=discord.SlashCommandOptionType.integer,
+    )
     async def set_discord(
-        self, ctx: discord.ApplicationContext, channel: discord.TextChannel
+        self,
+        ctx: discord.ApplicationContext,
+        channel: discord.TextChannel,
+        message_limit: int,
     ):
-        await self.index_cog.set_discord_command(ctx, channel)
+        await self.index_cog.set_discord_command(
+            ctx, channel, message_limit=message_limit
+        )
 
     @add_to_group("index")
     @discord.slash_command(
@@ -621,9 +774,15 @@ class Commands(discord.Cog, name="Commands"):
         guild_ids=ALLOWED_GUILDS,
         checks=[Check.check_admin_roles(), Check.check_index_roles()],
     )
+    @discord.option(
+        name="message_limit",
+        description="The number of messages to index per channel",
+        required=False,
+        input_type=discord.SlashCommandOptionType.integer,
+    )
     @discord.guild_only()
-    async def discord_backup(self, ctx: discord.ApplicationContext):
-        await self.index_cog.discord_backup_command(ctx)
+    async def discord_backup(self, ctx: discord.ApplicationContext, message_limit: int):
+        await self.index_cog.discord_backup_command(ctx, message_limit=message_limit)
 
     @add_to_group("index")
     @discord.slash_command(
@@ -637,7 +796,7 @@ class Commands(discord.Cog, name="Commands"):
         required=False,
         default=1,
         min_value=1,
-        max_value=3,
+        max_value=5,
         input_type=discord.SlashCommandOptionType.integer,
     )
     @discord.option(
@@ -648,14 +807,49 @@ class Commands(discord.Cog, name="Commands"):
         default="default",
         choices=["default", "compact", "tree_summarize"],
     )
+    @discord.option(
+        name="child_branch_factor",
+        description="Only for deep indexes, how deep to go, higher is expensive.",
+        required=False,
+        default=1,
+        min_value=1,
+        max_value=3,
+        input_type=discord.SlashCommandOptionType.integer,
+    )
+    @discord.option(
+        name="model",
+        description="The model to use for the request (querying, not composition)",
+        required=False,
+        default="gpt-3.5-turbo",
+        autocomplete=Settings_autocompleter.get_index_and_search_models,
+    )
+    @discord.option(
+        name="multistep",
+        description="Do a more intensive, multi-step query,",
+        required=False,
+        default=False,
+        input_type=discord.SlashCommandOptionType.boolean,
+    )
     async def query(
         self,
         ctx: discord.ApplicationContext,
         query: str,
         nodes: int,
         response_mode: str,
+        child_branch_factor: int,
+        model: str,
+        multistep: bool,
     ):
-        await self.index_cog.query_command(ctx, query, nodes, response_mode)
+        await ctx.defer()
+        await self.index_cog.query_command(
+            ctx,
+            query,
+            nodes,
+            response_mode,
+            child_branch_factor,
+            model,
+            multistep,
+        )
 
     #
     # DALLE commands
@@ -830,6 +1024,7 @@ class Commands(discord.Cog, name="Commands"):
         name="search",
         description="Search google alongside GPT3 for something",
         guild_ids=ALLOWED_GUILDS,
+        checks=[Check.check_search_roles()],
     )
     @discord.option(name="query", description="The query to search", required=True)
     @discord.option(
@@ -837,7 +1032,7 @@ class Commands(discord.Cog, name="Commands"):
         description="How many top links to use for context",
         required=False,
         input_type=discord.SlashCommandOptionType.integer,
-        max_value=6,
+        max_value=16,
         min_value=1,
     )
     @discord.option(
@@ -845,11 +1040,112 @@ class Commands(discord.Cog, name="Commands"):
         description="The higher the number, the more accurate the results, but more expensive",
         required=False,
         input_type=discord.SlashCommandOptionType.integer,
-        max_value=4,
+        max_value=8,
         min_value=1,
+    )
+    @discord.option(
+        name="deep",
+        description="Do a more intensive, long-running search",
+        required=False,
+        input_type=discord.SlashCommandOptionType.boolean,
+    )
+    @discord.option(
+        name="response_mode",
+        description="Response mode, doesn't work on deep searches",
+        guild_ids=ALLOWED_GUILDS,
+        required=False,
+        default="default",
+        choices=["default", "compact", "tree_summarize"],
+    )
+    @discord.option(
+        name="model",
+        description="The model to use for the request (querying, not composition)",
+        required=False,
+        default="gpt-3.5-turbo",
+        autocomplete=Settings_autocompleter.get_index_and_search_models,
+    )
+    @discord.option(
+        name="multistep",
+        description="Do a more intensive, multi-step query,",
+        required=False,
+        default=False,
+        input_type=discord.SlashCommandOptionType.boolean,
     )
     @discord.guild_only()
     async def search(
-        self, ctx: discord.ApplicationContext, query: str, scope: int, nodes: int
+        self,
+        ctx: discord.ApplicationContext,
+        query: str,
+        scope: int,
+        nodes: int,
+        deep: bool,
+        response_mode: str,
+        model: str,
+        multistep: bool,
     ):
-        await self.search_cog.search_command(ctx, query, scope, nodes)
+        await self.search_cog.search_command(
+            ctx,
+            query,
+            scope,
+            nodes,
+            deep,
+            response_mode,
+            model,
+            multistep,
+        )
+
+    # Transcribe commands
+    @add_to_group("transcribe")
+    @discord.slash_command(
+        name="file",
+        description="Transcribe an audio or video file",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="file",
+        description="A file to transcribe",
+        required=True,
+        input_type=discord.SlashCommandOptionType.attachment,
+    )
+    @discord.option(
+        name="temperature",
+        description="The higher the value, the riskier the model will be",
+        required=False,
+        input_type=discord.SlashCommandOptionType.number,
+        max_value=1,
+        min_value=0,
+    )
+    async def transcribe_file(
+        self,
+        ctx: discord.ApplicationContext,
+        file: discord.Attachment,
+        temperature: float,
+    ):
+        await self.transcribe_cog.transcribe_file_command(ctx, file, temperature)
+
+    @add_to_group("transcribe")
+    @discord.slash_command(
+        name="link",
+        description="Transcribe a file link or youtube link",
+        guild_ids=ALLOWED_GUILDS,
+    )
+    @discord.guild_only()
+    @discord.option(
+        name="link",
+        description="A link to transcribe",
+        required=True,
+        input_type=discord.SlashCommandOptionType.string,
+    )
+    @discord.option(
+        name="temperature",
+        description="The higher the value, the riskier the model will be",
+        required=False,
+        input_type=discord.SlashCommandOptionType.number,
+        max_value=1,
+        min_value=0,
+    )
+    async def transcribe_link(
+        self, ctx: discord.ApplicationContext, link: str, temperature: float
+    ):
+        await self.transcribe_cog.transcribe_link_command(ctx, link, temperature)

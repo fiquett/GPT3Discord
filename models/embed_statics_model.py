@@ -10,6 +10,15 @@ class EmbedStatics:
         pass
 
     @staticmethod
+    def get_api_timeout_embed():
+        embed = discord.Embed(
+            title="The API timed out. Try again later.",
+            description=f"*This is an issue with the OpenAI APIs, not with the bot instance.*",
+            color=discord.Color.red(),
+        )
+        return embed
+
+    @staticmethod
     def get_invalid_api_response_embed(e):
         embed = discord.Embed(
             title="The API returned an invalid response",
@@ -81,4 +90,228 @@ class EmbedStatics:
             description=f"{opener}",
             color=0x808080,
         )
+        return embed
+
+    @staticmethod
+    def get_index_set_success_embed(price="Unknown"):
+        embed = discord.Embed(
+            title="Index Added",
+            description=f"This index can now be queried and loaded with `/index query` and `/index load`\n\n||Total cost: {round(float(price), 6) if price != 'Unknown' else 'Unknown'}||",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def get_index_set_failure_embed(message):
+        embed = discord.Embed(
+            title="Index Add",
+            description=f"Index add failed. {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_index_load_success_embed(name=None):
+        embed = discord.Embed(
+            title="Index Loaded" if not name else f"Index {name} loaded",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def get_index_load_failure_embed(message):
+        embed = discord.Embed(
+            title="Index load",
+            description=f"Index load failed. {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_index_query_failure_embed(message):
+        embed = discord.Embed(
+            title="Index query",
+            description=f"Index query failed. {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_index_compose_success_embed(price="Unknown"):
+        embed = discord.Embed(
+            title="Indexes Composed",
+            description=f"Indexes composed successfully, you can query and load this index with `/index query` and `/index load`\n\n||Total cost: {round(float(price), 6) if price != 'Unknown' else 'Unknown'}||",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def get_index_compose_failure_embed(message):
+        embed = discord.Embed(
+            title="Index Compose",
+            description=f"Index compose failed. {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_index_compose_progress_embed():
+        embed = discord.Embed(
+            title="Index Compose",
+            description=f"Your index composition is running, this may take a while.",
+            color=discord.Color.blurple(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/txHhNzL.png")
+        return embed
+
+    @staticmethod
+    def get_index_rename_success_embed(original, renamed):
+        embed = discord.Embed(
+            title=f"Index Rename",
+            description=f"Index {original} renamed to {renamed}",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def get_index_rename_failure_embed(original, renamed, message):
+        embed = discord.Embed(
+            title="Index Rename",
+            description=f"Index rename from {original} to {renamed} failed. {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_edit_command_output_embed(response_text):
+        embed = discord.Embed(
+            title="GPT3 Edits",
+            description=f"{response_text}",
+            color=discord.Color.light_grey(),
+        )
+        return embed
+
+    @staticmethod
+    def get_search_failure_embed(message):
+        embed = discord.Embed(
+            title="AI-Assisted Search",
+            description=f"An error occured while performing search: {message}",
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def get_search_redo_progress_embed():
+        embed = discord.Embed(
+            title="AI-Assisted Search",
+            description=f"Your original search request is being redone. This may take a while.",
+            color=discord.Color.blurple(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/txHhNzL.png")
+        return embed
+
+    @staticmethod
+    def get_conversation_shared_embed(url):
+        embed = discord.Embed(
+            title="Conversation Shared",
+            description=f"You can access your shared conversation at: {url}",
+            color=discord.Color.blurple(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/8OIZc1A.png")
+        return embed
+
+    @staticmethod
+    def get_conversation_share_failed_embed(message):
+        embed = discord.Embed(
+            title="Conversation Sharing",
+            description=f"Conversation sharing failed: " + message,
+            color=discord.Color.red(),
+        )
+        # thumbnail of https://i.imgur.com/hbdBZfG.png
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
+        return embed
+
+    @staticmethod
+    def build_index_progress_embed():
+        embed = discord.Embed(
+            title="Index Service",
+            description="Indexing...",
+            color=discord.Color.blurple(),
+        )
+        embed.set_thumbnail(url="https://i.imgur.com/txHhNzL.png")
+        return embed
+
+    @staticmethod
+    def build_index_query_progress_embed(query):
+        embed = discord.Embed(
+            title="Index Service",
+            description=f"Query:\n`{query}`\nQuerying...",
+            color=discord.Color.blurple(),
+        )
+        embed.set_thumbnail(url="https://i.imgur.com/txHhNzL.png")
+        return embed
+
+    @staticmethod
+    def build_index_query_success_embed(query, price="Unknown"):
+        embed = discord.Embed(
+            title="Index Service",
+            description=f"Query:\n`{query}`\nThe index query was successful.\n\n||Total cost: {round(float(price), 6) if price != 'Unknown' else 'Unknown'}||",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def build_transcribe_progress_embed():
+        embed = discord.Embed(
+            title="Transcriber",
+            description=f"Your transcription request has been sent, this may take a while.",
+            color=discord.Color.blurple(),
+        )
+        embed.set_thumbnail(url="https://i.imgur.com/txHhNzL.png")
+        return embed
+
+    @staticmethod
+    def build_transcribe_success_embed(transcribed_text):
+        embed = discord.Embed(
+            title="Transcriber",
+            description=f"Transcribed successfully:\n`{transcribed_text}`",
+            color=discord.Color.green(),
+        )
+        # thumbnail of https://i.imgur.com/I5dIdg6.png
+        embed.set_thumbnail(url="https://i.imgur.com/I5dIdg6.png")
+        return embed
+
+    @staticmethod
+    def build_transcribe_failed_embed(message):
+        embed = discord.Embed(
+            title="Transcriber",
+            description=f"Transcription failed: " + message,
+            color=discord.Color.red(),
+        )
+        embed.set_thumbnail(url="https://i.imgur.com/hbdBZfG.png")
         return embed
